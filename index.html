@@ -14,6 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
@@ -107,13 +108,17 @@
                 projectId: "maxcar-7416d",
                 storageBucket: "maxcar-7416d.firebasestorage.app",
                 messagingSenderId: "279232212865",
-                appId: "1:279232212865:web:4f83efdeff7306e0bb4280"
+                appId: "1:279232212865:web:97da538c75dfd39ebb4280",
+                measurementId: "G-64W5EP9H2S"
             },
             dbAppId: "5-porte-caltagirone" 
         };
         // ==========================================
 
-        if (!firebase.apps.length) firebase.initializeApp(CONFIG.firebase);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(CONFIG.firebase);
+            firebase.analytics();
+        }
         const db = firebase.firestore();
         const auth = firebase.auth();
         const COLLECTION_PATH = `artifacts/${CONFIG.dbAppId}/public/data/automobili`;
