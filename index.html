@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5 Porte di Cusumano Giuseppe</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; margin: 0; min-height: 100vh; }
+        .hero-bg {
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)), 
+                        url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1600');
+            background-size: cover;
+            background-position: center;
+        }
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: #000; z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        .social-icon-img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        .social-link:hover .social-icon-img {
+            transform: scale(1.15);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <div class="flex flex-col items-center gap-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Caricamento...</p>
+        </div>
+    </div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // ==========================================
+        // CONFIGURAZIONE DEL TEMPLATE
+        // ==========================================
+        const CONFIG = {
+            // Dati Generali
+            nomeConcessionaria: "5 PORTE",
+            ragioneSociale: "\"5 PORTE\" DI CUSUMANO GIUSEPPE",
+            citta: "Caltagirone",
+            provinciaBreve: "CT",
+            provinciaEstesa: "Provincia di Catania",
+            cap: "95041",
+            
+            // Testi Homepage
+            sottotitoloHero: "Auto, Camper e Moto. Una passione di famiglia al tuo servizio.",
+            descrizioneFooter: "Nata quasi per gioco e guidata dalla passione. Oggi un punto di riferimento per chi cerca auto, camper e moto accuratamente selezionate.",
+            
+            // Contatti
+            indirizzo: "Viale Principe Umberto, 80",
+            telefonoMostrato: "+39 338 488 6567",
+            telefonoLink: "+393384886567",
+            whatsappNumber: "393384886567",
+            email: "motors66caltagirone@gmail.com",
+            
+            // Social e Link Esterni
+            social: {
+                facebook: "https://www.facebook.com/people/5-Porte/100045235488953/",
+                tiktok: "https://www.tiktok.com/@5porte?_r=1&_t=ZN-96T73OQKHIs",
+                subito: "https://share.google/T7YeNRR11ZBTgdbp4"
+            },
+            linkGoogleFormValutazione: "https://docs.google.com/forms/d/e/1FAIpQLSeYtcqgrOejvWqClIlEUneC2LPtTNzf67413H_mxFtcnGdnbw/viewform?embedded=true",
+            
+            // Sezione "Chi Siamo"
+            chiSiamo: {
+                titoloOrigini: "Dagli infissi alla passione per i motori",
+                paragrafo1: "La nostra storia inizia in modo singolare: essendo da sempre abituati alla vendita nel settore degli infissi (da cui prende ispirazione il nome \"5 Porte\"), avevamo deciso inizialmente di acquistare 5 vetture quasi per gioco, solo per testare il mercato automotive e vendere qualcosina.",
+                paragrafo2: "La vera svolta è avvenuta quando mio figlio è cresciuto. Vedendolo profondamente appassionato a questo mondo, abbiamo scelto di trasformare quello che era nato come un esperimento nel nostro lavoro primario. Oggi la nostra azienda è una solida realtà familiare che tratta un parco veicoli ben fornito, composto non solo da Auto, ma anche da Camper e Moto.",
+                citazione: "Ho visto mio figlio appassionato e ho deciso di farlo diventare il nostro lavoro. Da un test di 5 auto a una vera e propria concessionaria.",
+                nomeFondatore: "Giuseppe Cusumano",
+                ruoloFondatore: "Titolare e Fondatore",
+                inizialeFondatore: "G"
+            },
+
+            // Database Firebase
+            firebase: {
+                apiKey: "AIzaSyCB5yV6u4DtzUFb0jADUJobh8In52JNzp4",
+                authDomain: "maxcar-7416d.firebaseapp.com",
+                projectId: "maxcar-7416d",
+                storageBucket: "maxcar-7416d.firebasestorage.app",
+                messagingSenderId: "279232212865",
+                appId: "1:279232212865:web:4f83efdeff7306e0bb4280"
+            },
+            dbAppId: "5-porte-caltagirone" 
+        };
+        // ==========================================
+
+        if (!firebase.apps.length) firebase.initializeApp(CONFIG.firebase);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const COLLECTION_PATH = `artifacts/${CONFIG.dbAppId}/public/data/automobili`;
+
+        const LOGO_PRINCIPALE = "Logo.jpeg";
+        const FB_ICON = "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg";
+
+        // SVG string for TikTok and Subito
+        const TIKTOK_SVG = (
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+            </svg>
+        );
+        const SUBITO_SVG = (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+        );
+
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [selectedCar, setSelectedCar] = useState(null);
+            const [autoList, setAutoList] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [activeImage, setActiveImage] = useState(null);
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            
+            const [showMobileFilters, setShowMobileFilters] = useState(false);
+            const [filters, setFilters] = useState({
+                searchQuery: '',
+                tipoVeicolo: 'Tutti', // Nuovo filtro richiesto (Auto, Camper, Moto)
+                marca: '',
+                categoria: 'Tutte',
+                prezzoMax: '',
+                annoMin: '',
+                kmMax: '',
+                alimentazione: '',
+                cambio: ''
+            });
+
+            const handleFilterChange = (e) => {
+                const { name, value } = e.target;
+                setFilters(prev => ({ ...prev, [name]: value }));
+            };
+
+            const resetFilters = () => {
+                setFilters({ searchQuery: '', tipoVeicolo: 'Tutti', marca: '', categoria: 'Tutte', prezzoMax: '', annoMin: '', kmMax: '', alimentazione: '', cambio: '' });
+            };
+
+            // Dati derivati per le opzioni dei filtri
+            const marcheDisponibili = useMemo(() => [...new Set(autoList.map(a => a.marca))].sort(), [autoList]);
+            const alimentazioniDisponibili = useMemo(() => [...new Set(autoList.map(a => a.alimentazione))].sort(), [autoList]);
+            const cambiDisponibili = useMemo(() => [...new Set(autoList.map(a => a.cambio || 'Manuale'))].sort(), [autoList]);
+
+            // Filtraggio
+            const autoFiltrate = useMemo(() => {
+                return autoList.filter(car => {
+                    // Mappiamo il tipo veicolo. Se non specificato assumiamo sia un'Auto.
+                    const vehicleType = car.tipoVeicolo || 'Auto';
+                    
+                    const matchTipo = filters.tipoVeicolo === 'Tutti' || vehicleType === filters.tipoVeicolo;
+                    const matchSearch = !filters.searchQuery || `${car.marca} ${car.modello} ${car.descrizione || ''}`.toLowerCase().includes(filters.searchQuery.toLowerCase());
+                    const matchMarca = !filters.marca || car.marca === filters.marca;
+                    const matchCategoria = filters.categoria === 'Tutte' || car.categoria === filters.categoria;
+                    const matchPrezzo = !filters.prezzoMax || Number(car.prezzo) <= Number(filters.prezzoMax);
+                    const matchAnno = !filters.annoMin || Number(car.anno) >= Number(filters.annoMin);
+                    const matchKm = !filters.kmMax || Number(car.km) <= Number(filters.kmMax);
+                    const matchAlimentazione = !filters.alimentazione || car.alimentazione === filters.alimentazione;
+                    const matchCambio = !filters.cambio || (car.cambio || 'Manuale') === filters.cambio;
+                    
+                    return matchTipo && matchSearch && matchMarca && matchCategoria && matchPrezzo && matchAnno && matchKm && matchAlimentazione && matchCambio;
+                });
+            }, [autoList, filters]);
+
+            const homeAutoFiltrate = useMemo(() => {
+                return autoList.slice(0, 6);
+            }, [autoList]);
+
+            useEffect(() => {
+                document.title = `${CONFIG.nomeConcessionaria} | ${CONFIG.citta}`;
+            }, []);
+
+            useEffect(() => {
+                const init = async () => {
+                    try {
+                        await auth.signInAnonymously();
+                        const unsubscribe = db.collection(COLLECTION_PATH)
+                            .orderBy('createdAt', 'desc')
+                            .onSnapshot(snapshot => {
+                                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                setAutoList(data);
+                                setLoading(false);
+                                const loader = document.getElementById('loader');
+                                if (loader) loader.style.opacity = '0';
+                                setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
+                            }, (err) => {
+                                console.error("Errore database:", err);
+                                setLoading(false);
+                            });
+                        return () => unsubscribe();
+                    } catch (error) {
+                        console.error("Errore Auth:", error);
+                    }
+                };
+                init();
+            }, []);
+
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [currentPage, autoList, filters, selectedCar, isMobileMenuOpen, showMobileFilters]);
+
+            useEffect(() => {
+                window.scrollTo(0, 0);
+            }, [currentPage, selectedCar]);
+
+            const openCarDetails = (car) => {
+                setSelectedCar(car);
+                setActiveImage(car.immagine);
+                setCurrentPage('prodotto');
+            };
+
+            const carImages = useMemo(() => {
+                if (!selectedCar) return [];
+                const images = [selectedCar.immagine];
+                if (selectedCar.galleria && Array.isArray(selectedCar.galleria)) {
+                    selectedCar.galleria.forEach(img => {
+                        if (img !== selectedCar.immagine) images.push(img);
+                    });
+                }
+                return images;
+            }, [selectedCar]);
+
+            return (
+                <div className="min-h-screen flex flex-col bg-slate-50 overflow-x-hidden w-full">
+                    {/* Header Fisso */}
+                    <header className="sticky top-0 z-50 w-full flex flex-col shadow-lg">
+                        <nav className="bg-white/95 backdrop-blur-md px-6 py-3 w-full border-b border-slate-200">
+                            <div className="max-w-[90rem] mx-auto flex justify-between items-center gap-4">
+                                
+                                {/* Logo (Sinistra) */}
+                                <div className="flex items-center gap-6 lg:gap-8 flex-shrink-0">
+                                    <div className="flex items-center cursor-pointer" onClick={() => { setCurrentPage('home'); setSelectedCar(null); setIsMobileMenuOpen(false); }}>
+                                        <img src={LOGO_PRINCIPALE} alt={CONFIG.nomeConcessionaria} className="h-16 md:h-20 object-contain" />
+                                    </div>
+                                </div>
+                                
+                                {/* Desktop Menu (Destra) */}
+                                <div className="hidden lg:flex flex-wrap justify-end gap-x-8 gap-y-2 text-[10px] xl:text-xs font-bold uppercase tracking-widest items-center">
+                                    <button onClick={() => { setCurrentPage('home'); setSelectedCar(null); }} className={`transition ${currentPage === 'home' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : 'text-slate-500 hover:text-blue-600'}`}>Home</button>
+                                    <button onClick={() => { setCurrentPage('piazzale'); setSelectedCar(null); }} className={`transition ${currentPage === 'piazzale' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : 'text-slate-500 hover:text-blue-600'}`}>Piazzale</button>
+                                    <button onClick={() => { setCurrentPage('vendi'); setSelectedCar(null); }} className={`transition ${currentPage === 'vendi' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : 'text-slate-500 hover:text-blue-600'}`}>Vendi Auto</button>
+                                    <button onClick={() => { setCurrentPage('chisiamo'); setSelectedCar(null); }} className={`transition ${currentPage === 'chisiamo' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : 'text-slate-500 hover:text-blue-600'}`}>Chi Siamo</button>
+                                    <button onClick={() => { setCurrentPage('contatti'); setSelectedCar(null); }} className={`transition ${currentPage === 'contatti' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : 'text-slate-500 hover:text-blue-600'}`}>Contatti</button>
+                                </div>
+
+                                {/* Mobile Menu Button */}
+                                <button className="lg:hidden text-slate-900 focus:outline-none p-2 flex-shrink-0" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                                    <i data-lucide={isMobileMenuOpen ? "x" : "menu"} className="w-7 h-7"></i>
+                                </button>
+                            </div>
+
+                            {/* Mobile Dropdown */}
+                            {isMobileMenuOpen && (
+                                <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 shadow-2xl flex flex-col py-6 px-8 gap-6 text-sm font-bold uppercase tracking-widest text-slate-500 animate-in slide-in-from-top-2 duration-300">
+                                    <button onClick={() => { setCurrentPage('home'); setSelectedCar(null); setIsMobileMenuOpen(false); }} className={`text-left hover:text-blue-600 transition ${currentPage === 'home' ? 'text-blue-600' : ''}`}>Home</button>
+                                    <button onClick={() => { setCurrentPage('piazzale'); setSelectedCar(null); setIsMobileMenuOpen(false); }} className={`text-left hover:text-blue-600 transition ${currentPage === 'piazzale' ? 'text-blue-600' : ''}`}>Piazzale</button>
+                                    <button onClick={() => { setCurrentPage('vendi'); setSelectedCar(null); setIsMobileMenuOpen(false); }} className={`text-left hover:text-blue-600 transition ${currentPage === 'vendi' ? 'text-blue-600' : ''}`}>Vendi Auto</button>
+                                    <button onClick={() => { setCurrentPage('chisiamo'); setSelectedCar(null); setIsMobileMenuOpen(false); }} className={`text-left hover:text-blue-600 transition ${currentPage === 'chisiamo' ? 'text-blue-600' : ''}`}>Chi Siamo</button>
+                                    <button onClick={() => { setCurrentPage('contatti'); setSelectedCar(null); setIsMobileMenuOpen(false); }} className={`text-left hover:text-blue-600 transition ${currentPage === 'contatti' ? 'text-blue-600' : ''}`}>Contatti</button>
+                                </div>
+                            )}
+                        </nav>
+                    </header>
+
+                    <main className="flex-grow w-full">
+                        {currentPage === 'home' && (
+                            <>
+                                <div className="hero-bg min-h-[80vh] flex items-center justify-center text-center text-white px-4 border-b-4 border-slate-900">
+                                    <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                                        <img src={LOGO_PRINCIPALE} alt="5 Porte" className="mx-auto h-32 md:h-48 mb-6 object-contain" />
+                                        <p className="text-xl md:text-3xl font-light mb-10 text-slate-200">{CONFIG.sottotitoloHero}</p>
+                                        <div className="flex flex-col md:flex-row gap-4 justify-center">
+                                            <button onClick={() => setCurrentPage('piazzale')} className="bg-blue-600 text-white hover:bg-blue-700 px-12 py-5 rounded-xl font-black uppercase transition shadow-2xl hover:scale-105 transform">Esplora il Piazzale</button>
+                                            <a href={`tel:${CONFIG.telefonoLink}`} className="bg-white/10 hover:bg-white/20 backdrop-blur-md px-12 py-5 rounded-xl font-bold uppercase transition border border-white/20">Chiama Ora</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="py-20 px-6 bg-white border-y">
+                                    <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm"><i data-lucide="car-front" className="w-8 h-8"></i></div>
+                                            <h3 className="font-black uppercase text-xl mb-3">Auto, Camper e Moto</h3>
+                                            <p className="text-slate-500 text-sm leading-relaxed">Una vasta selezione di veicoli per ogni esigenza. Dai camper per i tuoi viaggi alle moto per le tue passioni.</p>
+                                        </div>
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm"><i data-lucide="shield-check" className="w-8 h-8"></i></div>
+                                            <h3 className="font-black uppercase text-xl mb-3">Trasparenza e Affidabilità</h3>
+                                            <p className="text-slate-500 text-sm leading-relaxed">Nata dalla passione familiare, offriamo ai nostri clienti la massima onestà e controlli rigorosi su ogni mezzo.</p>
+                                        </div>
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-sm"><i data-lucide="map-pin" className="w-8 h-8"></i></div>
+                                            <h3 className="font-black uppercase text-xl mb-3">Siamo a Caltagirone</h3>
+                                            <p className="text-slate-500 text-sm leading-relaxed">Vieni a trovarci nel nostro salone in Viale Principe Umberto 80 per scoprire e provare tutti i nostri veicoli.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        
+                        {currentPage === 'home' && (
+                            <div className="py-16 px-6 max-w-[90rem] mx-auto">
+                                <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 border-b pb-8">
+                                    <h2 className="text-4xl font-black uppercase tracking-tight flex-shrink-0">In <span className="underline decoration-slate-900">Vetrina</span></h2>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
+                                    {homeAutoFiltrate.map(car => (
+                                        <div key={car.id} onClick={() => openCarDetails(car)} className="bg-white rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl transition duration-500 border border-slate-100 group cursor-pointer">
+                                            <div className="h-64 overflow-hidden relative">
+                                                <img src={car.immagine} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={car.modello} />
+                                                <div className="absolute top-4 left-4 bg-blue-600/90 text-white backdrop-blur px-3 py-1 rounded-full text-[10px] font-black shadow-sm uppercase tracking-widest">{car.tipoVeicolo || 'Auto'} • {car.categoria}</div>
+                                                <div className="absolute bottom-4 right-4 bg-white text-blue-600 px-4 py-2 rounded-2xl font-black text-xl shadow-lg">€{Number(car.prezzo)?.toLocaleString()}</div>
+                                            </div>
+                                            <div className="p-8">
+                                                <h3 className="font-black uppercase text-2xl mb-1 tracking-tighter text-slate-900 leading-none">{car.marca}</h3>
+                                                <p className="text-slate-500 font-bold uppercase text-sm mb-4">{car.modello}</p>
+                                                <div className="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase border-t pt-4">
+                                                    <span className="flex items-center gap-1"><i data-lucide="calendar" className="w-3 h-3 text-blue-600"></i> {car.anno}</span>
+                                                    <span className="flex items-center gap-1"><i data-lucide="gauge" className="w-3 h-3 text-blue-600"></i> {Number(car.km)?.toLocaleString()} KM</span>
+                                                    <span className="flex items-center gap-1"><i data-lucide="fuel" className="w-3 h-3 text-blue-600"></i> {car.alimentazione}</span>
+                                                </div>
+                                                <button className="w-full mt-8 bg-slate-900 text-white py-4 rounded-xl font-bold text-[11px] uppercase tracking-widest group-hover:bg-blue-600 transition duration-300">Visualizza Dettagli</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {homeAutoFiltrate.length === 0 && (
+                                        <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+                                            <p className="text-slate-500 font-bold uppercase text-sm tracking-widest">Nessun veicolo trovato per questa selezione.</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="text-center">
+                                    <button onClick={() => setCurrentPage('piazzale')} className="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-blue-700 transition shadow-lg">Esplora Tutto l'Inventario</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'piazzale' && (
+                            <div className="py-12 px-6 max-w-[90rem] mx-auto animate-in fade-in duration-700">
+                                <div className="flex flex-col md:flex-row justify-between items-end mb-8 border-b pb-8 gap-4">
+                                    <div>
+                                        <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-slate-900">Il Nostro <span className="underline decoration-slate-900">Piazzale</span></h2>
+                                        <p className="text-slate-500 font-bold mt-2 text-sm md:text-base">Esplora i nostri veicoli. Usa i filtri per trovare quello perfetto per te.</p>
+                                    </div>
+                                    <button onClick={() => setShowMobileFilters(!showMobileFilters)} className="lg:hidden w-full md:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-4 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg">
+                                        <i data-lucide="filter" className="w-4 h-4"></i> {showMobileFilters ? 'Nascondi Filtri' : 'Mostra Filtri'}
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-col lg:flex-row gap-10 items-start">
+                                    {/* Sidebar Filtri Avanzati */}
+                                    <div className={`lg:w-1/4 w-full bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-slate-100 sticky top-32 transition-all ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="font-black uppercase text-xl">Filtra <span className="text-slate-500">Veicoli</span></h3>
+                                            <button onClick={resetFilters} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-black transition underline">Resetta</button>
+                                        </div>
+                                        
+                                        <div className="space-y-6">
+                                            {/* Tipo Veicolo (Nuovo filtro principale) */}
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-900 mb-2">TIPO VEICOLO</label>
+                                                <select name="tipoVeicolo" value={filters.tipoVeicolo} onChange={handleFilterChange} className="w-full bg-slate-50 border border-slate-200 text-slate-900 px-4 py-3 rounded-xl text-sm font-bold outline-none transition appearance-none cursor-pointer focus:border-blue-500">
+                                                    <option value="Tutti">Mostra Tutti i Veicoli</option>
+                                                    <option value="Auto">🚙 Solo Auto</option>
+                                                    <option value="Camper">🚐 Solo Camper</option>
+                                                    <option value="Moto">🏍️ Solo Moto</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Ricerca Libera */}
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ricerca Libera</label>
+                                                <div className="relative">
+                                                    <i data-lucide="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                                                    <input type="text" name="searchQuery" value={filters.searchQuery} onChange={handleFilterChange} placeholder="Es. Fiat, Camper..." className="w-full bg-slate-50 pl-11 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:border-black focus:ring-1 focus:ring-black outline-none transition" />
+                                                </div>
+                                            </div>
+                                            {/* Marca */}
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Marca</label>
+                                                <select name="marca" value={filters.marca} onChange={handleFilterChange} className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:border-black outline-none transition appearance-none cursor-pointer">
+                                                    <option value="">Tutte le Marche</option>
+                                                    {marcheDisponibili.map(m => <option key={m} value={m}>{m}</option>)}
+                                                </select>
+                                            </div>
+                                            {/* Categoria */}
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Carrozzeria / Categoria</label>
+                                                <select name="categoria" value={filters.categoria} onChange={handleFilterChange} className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:border-black outline-none transition appearance-none cursor-pointer">
+                                                    <option value="Tutte">Tutte le Categorie</option>
+                                                    <option value="SUV">SUV</option>
+                                                    <option value="Berlina">Berlina</option>
+                                                    <option value="Utilitaria">Utilitaria</option>
+                                                    <option value="Sportiva">Sportiva</option>
+                                                    <option value="Station Wagon">Station Wagon</option>
+                                                    <option value="Mansardato">Mansardato (Camper)</option>
+                                                    <option value="Motorhome">Motorhome (Camper)</option>
+                                                    <option value="Scooter">Scooter (Moto)</option>
+                                                    <option value="Enduro">Enduro (Moto)</option>
+                                                    <option value="Altri Veicoli">Altri Veicoli</option>
+                                                </select>
+                                            </div>
+                                            {/* Prezzo Max */}
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Prezzo Max (€)</label>
+                                                <input type="number" name="prezzoMax" value={filters.prezzoMax} onChange={handleFilterChange} placeholder="Nessun limite" className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:border-black outline-none transition" />
+                                            </div>
+                                            {/* Anno Minimo */}
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Anno Min. Immatricolazione</label>
+                                                <input type="number" name="annoMin" value={filters.annoMin} onChange={handleFilterChange} placeholder="Es. 2018" className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:border-black outline-none transition" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Griglia Auto (Piazzale) */}
+                                    <div className="lg:w-3/4 w-full">
+                                        {autoFiltrate.length === 0 ? (
+                                            <div className="bg-white p-12 rounded-[3rem] text-center shadow-xl border border-slate-100 flex flex-col items-center justify-center min-h-[400px]">
+                                                <div className="bg-slate-50 p-6 rounded-full mb-6">
+                                                    <i data-lucide="search-x" className="w-12 h-12 text-slate-300"></i>
+                                                </div>
+                                                <h3 className="text-3xl font-black uppercase text-slate-900 mb-4 tracking-tight">Nessun veicolo trovato</h3>
+                                                <p className="text-slate-500 font-bold mb-8 max-w-md mx-auto">Non ci sono mezzi che corrispondono esattamente ai filtri selezionati.</p>
+                                                <button onClick={resetFilters} className="bg-slate-900 text-white px-10 py-4 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-slate-800 transition transform hover:-translate-y-1">Azzera filtri</button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                                                {autoFiltrate.map(car => (
+                                                    <div key={car.id} onClick={() => openCarDetails(car)} className="bg-white rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl transition duration-500 border border-slate-100 group cursor-pointer flex flex-col h-full">
+                                                        <div className="h-56 overflow-hidden relative flex-shrink-0">
+                                                            <img src={car.immagine} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={car.modello} />
+                                                            <div className="absolute top-4 left-4 bg-blue-600/90 text-white backdrop-blur px-3 py-1 rounded-full text-[10px] font-black shadow-sm uppercase tracking-widest truncate max-w-[80%]">{car.tipoVeicolo || 'Auto'}</div>
+                                                            <div className="absolute bottom-4 right-4 bg-white text-blue-600 px-4 py-2 rounded-xl font-black text-lg shadow-lg">€{Number(car.prezzo)?.toLocaleString()}</div>
+                                                        </div>
+                                                        <div className="p-6 flex-grow flex flex-col">
+                                                            <h3 className="font-black uppercase text-xl mb-1 tracking-tighter text-slate-900 leading-none">{car.marca}</h3>
+                                                            <p className="text-slate-500 font-bold uppercase text-xs mb-4 line-clamp-1">{car.modello}</p>
+                                                            <div className="flex items-center justify-between text-slate-400 text-[9px] font-bold uppercase border-t pt-4 mt-auto">
+                                                                <span className="flex items-center gap-1"><i data-lucide="calendar" className="w-3 h-3 text-blue-600"></i> {car.anno}</span>
+                                                                <span className="flex items-center gap-1"><i data-lucide="gauge" className="w-3 h-3 text-blue-600"></i> {Number(car.km)?.toLocaleString()} KM</span>
+                                                                <span className="flex items-center gap-1"><i data-lucide="fuel" className="w-3 h-3 text-blue-600"></i> {car.alimentazione}</span>
+                                                            </div>
+                                                            <button className="w-full mt-6 bg-slate-900 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest group-hover:bg-blue-600 transition duration-300">Scopri Dettagli</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'prodotto' && selectedCar && (
+                            <div className="py-12 px-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+                                <button onClick={() => setCurrentPage('piazzale')} className="flex items-center gap-2 text-slate-500 font-bold uppercase text-xs mb-8 hover:text-black transition">
+                                    <i data-lucide="arrow-left" className="w-4 h-4"></i> Torna al piazzale
+                                </button>
+                                
+                                <div className="grid lg:grid-cols-2 gap-12 mb-16">
+                                    <div className="space-y-4 overflow-hidden w-full max-w-full">
+                                        <div className="rounded-[2.5rem] overflow-hidden shadow-2xl bg-white border border-slate-100 aspect-video relative">
+                                            <img src={activeImage} alt={selectedCar.modello} className="w-full h-full object-cover transition-opacity duration-300" />
+                                        </div>
+                                        {carImages.length > 1 && (
+                                            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                                                {carImages.map((img, idx) => (
+                                                    <div 
+                                                        key={idx} 
+                                                        onClick={() => setActiveImage(img)}
+                                                        className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden cursor-pointer border-4 transition ${activeImage === img ? 'border-black shadow-lg' : 'border-white opacity-70 hover:opacity-100'}`}
+                                                    >
+                                                        <img src={img} className="w-full h-full object-cover" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col overflow-hidden w-full max-w-full">
+                                        <div className="flex gap-2 mb-4">
+                                            <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest w-fit">{selectedCar.tipoVeicolo || 'Auto'}</span>
+                                            <span className="bg-slate-100 text-slate-600 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest w-fit">{selectedCar.categoria}</span>
+                                        </div>
+                                        <h1 className="text-5xl font-black uppercase tracking-tighter text-slate-900 leading-none mb-2 break-words">{selectedCar.marca}</h1>
+                                        <p className="text-2xl text-slate-500 font-bold uppercase mb-6 break-words">{selectedCar.modello}</p>
+                                        <div className="text-4xl font-black text-slate-900 mb-8">€ {Number(selectedCar.prezzo)?.toLocaleString()}</div>
+                                        
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                                            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                                                <i data-lucide="calendar" className="w-4 h-4 text-black mb-2"></i>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">Anno</p>
+                                                <p className="font-black text-md text-slate-900">{selectedCar.anno}</p>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                                                <i data-lucide="gauge" className="w-4 h-4 text-black mb-2"></i>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">Km</p>
+                                                <p className="font-black text-md text-slate-900">{Number(selectedCar.km)?.toLocaleString()}</p>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                                                <i data-lucide="fuel" className="w-4 h-4 text-black mb-2"></i>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">Alim.</p>
+                                                <p className="font-black text-md text-slate-900 truncate w-full">{selectedCar.alimentazione}</p>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                                                <i data-lucide="settings-2" className="w-4 h-4 text-black mb-2"></i>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">Cambio</p>
+                                                <p className="font-black text-md text-slate-900">{selectedCar.cambio || 'N/D'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 w-full">
+                                            <a href={`https://wa.me/${CONFIG.whatsappNumber}?text=Buongiorno, vorrei informazioni sulla ${selectedCar.marca} ${selectedCar.modello} vista sul sito.`} target="_blank" className="w-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center gap-3 py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition shadow-lg"><i data-lucide="message-circle" className="w-5 h-5"></i>WhatsApp</a>
+                                            <a href={`tel:${CONFIG.telefonoLink}`} className="w-full bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center gap-3 py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition shadow-lg"><i data-lucide="phone" className="w-5 h-5"></i>Chiama Ora</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid lg:grid-cols-3 gap-12 border-t pt-16">
+                                    <div className="lg:col-span-2 overflow-hidden max-w-full">
+                                        <h3 className="text-2xl font-black uppercase mb-6 text-slate-900">Descrizione</h3>
+                                        <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                                            <p className="text-slate-600 leading-relaxed whitespace-pre-line text-sm md:text-base break-words">
+                                                {selectedCar.descrizione || "Nessuna descrizione dettagliata fornita per questo veicolo."}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-8 w-full max-w-full">
+                                        <h3 className="text-2xl font-black uppercase mb-6 text-slate-900">Scheda Tecnica</h3>
+                                        <div className="bg-slate-900 text-white p-6 md:p-8 rounded-[2rem] shadow-xl w-full">
+                                            <ul className="space-y-5 text-xs md:text-sm uppercase font-bold tracking-wider">
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Marca</span>
+                                                    <span className="text-right ml-2">{selectedCar.marca}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Modello</span>
+                                                    <span className="text-right ml-2">{selectedCar.modello}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Anno</span>
+                                                    <span className="text-right ml-2">{selectedCar.anno}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Chilometri</span>
+                                                    <span className="text-right ml-2">{Number(selectedCar.km)?.toLocaleString()} km</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Alimentazione</span>
+                                                    <span className="text-right ml-2">{selectedCar.alimentazione}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Cambio</span>
+                                                    <span className="text-right ml-2">{selectedCar.cambio || "N/D"}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Potenza</span>
+                                                    <span className="text-right ml-2">{selectedCar.potenza ? `${selectedCar.potenza} CV` : "N/D"}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Cilindrata</span>
+                                                    <span className="text-right ml-2">{selectedCar.cilindrata ? `${selectedCar.cilindrata} cc` : "N/D"}</span>
+                                                </li>
+                                                <li className="flex justify-between border-b border-white/10 pb-2">
+                                                    <span className="text-slate-400">Colore</span>
+                                                    <span className="text-right ml-2">{selectedCar.colore || "N/D"}</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'contatti' && (
+                            <div className="py-24 px-6 max-w-5xl mx-auto animate-in fade-in duration-700">
+                                <h2 className="text-5xl font-black uppercase mb-16 text-center">Contattaci</h2>
+                                <div className="grid md:grid-cols-2 gap-16 items-start">
+                                    <div className="space-y-10">
+                                        <div className="flex gap-6 items-start">
+                                            <div className="bg-blue-50 p-4 rounded-2xl text-blue-600 shadow-sm"><i data-lucide="map-pin" className="w-6 h-6"></i></div>
+                                            <div>
+                                                <h4 className="font-black uppercase text-xs tracking-widest text-slate-400 mb-2">Sede Principale</h4>
+                                                <p className="text-xl font-bold text-slate-900 leading-tight">{CONFIG.indirizzo}<br/>{CONFIG.cap} {CONFIG.citta} ({CONFIG.provinciaBreve})</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-6 items-start">
+                                            <div className="bg-blue-50 p-4 rounded-2xl text-blue-600 shadow-sm"><i data-lucide="mail" className="w-6 h-6"></i></div>
+                                            <div>
+                                                <h4 className="font-black uppercase text-xs tracking-widest text-slate-400 mb-2">Email</h4>
+                                                <p className="text-xl font-bold text-slate-900 break-all">{CONFIG.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-6 items-start">
+                                            <div className="bg-blue-50 p-4 rounded-2xl text-blue-600 shadow-sm"><i data-lucide="phone" className="w-6 h-6"></i></div>
+                                            <div>
+                                                <h4 className="font-black uppercase text-xs tracking-widest text-slate-400 mb-2">Linea Diretta</h4>
+                                                <p className="text-2xl font-black text-slate-900">{CONFIG.telefonoMostrato}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col items-center text-center justify-center min-h-[300px]">
+                                        <h3 className="text-3xl font-black uppercase mb-8 text-slate-900 tracking-tighter">Social & Web</h3>
+                                        <div className="flex flex-col gap-4 w-full">
+                                            {CONFIG.social.facebook && (
+                                                <a href={CONFIG.social.facebook} target="_blank" className="bg-[#1877F2] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-4 hover:bg-blue-700 transition shadow-lg transform hover:-translate-y-1">
+                                                    <img src={FB_ICON} className="w-5 h-5" alt="Facebook" /> Facebook
+                                                </a>
+                                            )}
+                                            {CONFIG.social.tiktok && (
+                                                <a href={CONFIG.social.tiktok} target="_blank" className="bg-black text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-4 hover:bg-slate-800 transition shadow-lg transform hover:-translate-y-1">
+                                                    {TIKTOK_SVG} TikTok
+                                                </a>
+                                            )}
+                                            {CONFIG.social.subito && (
+                                                <a href={CONFIG.social.subito} target="_blank" className="bg-red-500 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-4 hover:bg-red-600 transition shadow-lg transform hover:-translate-y-1">
+                                                    {SUBITO_SVG} Vetrina su Subito.it
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'vendi' && (
+                            <div className="py-24 px-6 max-w-5xl mx-auto animate-in fade-in duration-700">
+                                <h2 className="text-5xl font-black uppercase mb-8 text-center">Vendi il tuo <span className="underline decoration-slate-900">Veicolo</span></h2>
+                                <p className="text-center text-slate-500 font-bold mb-12 text-sm">Compila il modulo sottostante con i dati del tuo veicolo per ricevere una valutazione gratuita e senza impegno.</p>
+                                <div className="bg-white p-4 md:p-8 rounded-[3rem] shadow-xl border border-slate-100 flex justify-center w-full h-[900px]">
+                                    <iframe 
+                                        src={CONFIG.linkGoogleFormValutazione} 
+                                        width="100%" 
+                                        height="100%" 
+                                        frameBorder="0" 
+                                        marginHeight="0" 
+                                        marginWidth="0"
+                                        className="rounded-2xl"
+                                    >Caricamento in corso…</iframe>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'chisiamo' && (
+                            <div className="py-24 px-6 max-w-7xl mx-auto animate-in fade-in duration-700">
+                                <div className="text-center mb-16">
+                                    <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-slate-900 mb-6">Chi <span className="underline decoration-slate-900">Siamo</span></h2>
+                                    <p className="text-xl text-slate-500 font-bold max-w-3xl mx-auto">La passione per i motori al tuo servizio. Scopri la storia di {CONFIG.nomeConcessionaria}.</p>
+                                </div>
+
+                                <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
+                                    <div className="space-y-6">
+                                        <h3 className="text-3xl font-black uppercase text-slate-900">{CONFIG.chiSiamo.titoloOrigini}</h3>
+                                        <p className="text-slate-600 leading-relaxed text-lg" dangerouslySetInnerHTML={{__html: CONFIG.chiSiamo.paragrafo1}}></p>
+                                        <p className="text-slate-600 leading-relaxed text-lg" dangerouslySetInnerHTML={{__html: CONFIG.chiSiamo.paragrafo2}}></p>
+                                    </div>
+                                    <div className="bg-blue-600 rounded-[3rem] p-8 md:p-12 shadow-2xl text-white relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-8 opacity-10"><i data-lucide="quote" className="w-24 h-24"></i></div>
+                                        <div className="relative z-10">
+                                            <i data-lucide="car" className="w-12 h-12 text-blue-200 mb-6"></i>
+                                            <p className="text-xl md:text-2xl font-light italic leading-relaxed mb-8">
+                                                "{CONFIG.chiSiamo.citazione}"
+                                            </p>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center font-black text-xl">{CONFIG.chiSiamo.inizialeFondatore}</div>
+                                                <div>
+                                                    <p className="font-bold uppercase tracking-widest text-xs">{CONFIG.chiSiamo.nomeFondatore}</p>
+                                                    <p className="text-blue-200 text-[10px] uppercase tracking-widest">{CONFIG.chiSiamo.ruoloFondatore}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid md:grid-cols-3 gap-8">
+                                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl transition duration-300">
+                                        <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6"><i data-lucide="car-front" className="w-6 h-6"></i></div>
+                                        <h4 className="text-xl font-black uppercase mb-3">Parco Veicoli Completo</h4>
+                                        <p className="text-slate-500 leading-relaxed text-sm">Disponiamo stabilmente di decine di auto, oltre a camper pronti per le tue vacanze e moto per gli appassionati delle due ruote.</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl transition duration-300">
+                                        <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6"><i data-lucide="handshake" className="w-6 h-6"></i></div>
+                                        <h4 className="text-xl font-black uppercase mb-3">Impronta Familiare</h4>
+                                        <p className="text-slate-500 leading-relaxed text-sm">Gestiamo tutto con passione e onestà, proprio come in famiglia. Crediamo nella trasparenza come miglior biglietto da visita.</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl transition duration-300">
+                                        <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6"><i data-lucide="shield-alert" className="w-6 h-6"></i></div>
+                                        <h4 className="text-xl font-black uppercase mb-3">Sicurezza Garantita</h4>
+                                        <p className="text-slate-500 leading-relaxed text-sm">Ogni mezzo che esce dal nostro piazzale viene verificato e controllato, per farti guidare senza pensieri sin dal primo chilometro.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    <footer className="bg-slate-900 text-white py-16 px-6 mt-auto">
+                        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12 border-b border-white/10 pb-12 mb-8">
+                            <div>
+                                <img src={LOGO_PRINCIPALE} alt="5 Porte" className="h-16 mb-6 object-contain" />
+                                <p className="text-slate-400 text-sm leading-relaxed mb-6">{CONFIG.descrizioneFooter}</p>
+                                <div className="flex gap-4">
+                                    {CONFIG.social.facebook && (
+                                        <a href={CONFIG.social.facebook} target="_blank" className="social-link w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-blue-600">
+                                            <img src={FB_ICON} className="social-icon-img" alt="Facebook" />
+                                        </a>
+                                    )}
+                                    {CONFIG.social.tiktok && (
+                                        <a href={CONFIG.social.tiktok} target="_blank" className="social-link w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-slate-800 text-white">
+                                            {TIKTOK_SVG}
+                                        </a>
+                                    )}
+                                    {CONFIG.social.subito && (
+                                        <a href={CONFIG.social.subito} target="_blank" className="social-link w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-red-600 text-white">
+                                            {SUBITO_SVG}
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <h5 className="font-bold uppercase text-xs tracking-widest text-slate-500">Contatti Rapidi</h5>
+                                <div className="flex flex-col gap-3">
+                                    <a href={`tel:${CONFIG.telefonoLink}`} className="text-slate-300 font-bold hover:text-white transition flex items-center gap-3">
+                                        <div className="bg-white/5 p-2 rounded-lg"><i data-lucide="phone" className="w-4 h-4"></i></div> 
+                                        {CONFIG.telefonoMostrato}
+                                    </a>
+                                    <a href={`mailto:${CONFIG.email}`} className="text-slate-300 font-bold hover:text-white transition flex items-center gap-3 break-all">
+                                        <div className="bg-white/5 p-2 rounded-lg"><i data-lucide="mail" className="w-4 h-4"></i></div> 
+                                        {CONFIG.email}
+                                    </a>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <h5 className="font-bold uppercase text-xs tracking-widest text-slate-500">Sede Operativa</h5>
+                                <p className="text-slate-300 font-bold flex items-start gap-3">
+                                    <div className="bg-white/5 p-2 rounded-lg"><i data-lucide="map-pin" className="w-4 h-4"></i></div>
+                                    <span>{CONFIG.indirizzo}<br/><span className="text-slate-500 font-medium">{CONFIG.cap} {CONFIG.citta} ({CONFIG.provinciaBreve})</span></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-widest opacity-40">
+                            <span>&copy; {new Date().getFullYear()} {CONFIG.ragioneSociale}</span>
+                            <span>{CONFIG.citta} ({CONFIG.provinciaBreve})</span>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
