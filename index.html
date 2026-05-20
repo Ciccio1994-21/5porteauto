@@ -19,12 +19,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; margin: 0; min-height: 100vh; }
-        .hero-bg {
-            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)), 
-                        url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1600');
-            background-size: cover;
-            background-position: center;
-        }
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -148,6 +142,7 @@
             const [loading, setLoading] = useState(true);
             const [activeImage, setActiveImage] = useState(null);
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
             
             const [showMobileFilters, setShowMobileFilters] = useState(false);
             const [filters, setFilters] = useState({
@@ -161,6 +156,13 @@
                 alimentazione: '',
                 cambio: ''
             });
+
+            // Immagini per lo slider della Hero Section
+            const heroImages = useMemo(() => [
+                'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1920', // Auto
+                'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&q=80&w=1920', // Camper
+                'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1920'  // Moto
+            ], []);
 
             const handleFilterChange = (e) => {
                 const { name, value } = e.target;
@@ -203,6 +205,15 @@
             useEffect(() => {
                 document.title = `${CONFIG.nomeConcessionaria} | ${CONFIG.citta}`;
             }, []);
+
+            // Gestione slider della hero section
+            useEffect(() => {
+                if (currentPage !== 'home') return;
+                const interval = setInterval(() => {
+                    setCurrentHeroIndex(prev => (prev + 1) % heroImages.length);
+                }, 3000);
+                return () => clearInterval(interval);
+            }, [currentPage, heroImages.length]);
 
             useEffect(() => {
                 const init = async () => {
@@ -299,14 +310,39 @@
                     <main className="flex-grow w-full">
                         {currentPage === 'home' && (
                             <>
-                                <div className="hero-bg min-h-[80vh] flex items-center justify-center text-center text-white px-4 border-b-4 border-slate-900">
-                                    <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                                        <img src={LOGO_PRINCIPALE} alt="5 Porte" className="mx-auto h-32 md:h-48 mb-6 object-contain" />
-                                        <p className="text-xl md:text-3xl font-light mb-10 text-slate-200">{CONFIG.sottotitoloHero}</p>
+                                <div className="relative min-h-[80vh] flex items-center justify-center text-center text-white px-4 border-b-[6px] border-blue-500 overflow-hidden bg-slate-900">
+                                    
+                                    {/* Sfondo Slider Dinamico */}
+                                    {heroImages.map((img, index) => (
+                                        <div
+                                            key={img}
+                                            className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === currentHeroIndex ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
+                                            style={{
+                                                backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.9)), url(${img})`
+                                            }}
+                                        ></div>
+                                    ))}
+
+                                    {/* Contenuto Hero */}
+                                    <div className="relative z-10 max-w-4xl animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                                        <img src={LOGO_PRINCIPALE} alt="5 Porte" className="mx-auto h-32 md:h-48 mb-6 object-contain drop-shadow-2xl" />
+                                        <p className="text-xl md:text-3xl font-bold mb-10 text-white drop-shadow-lg leading-relaxed">{CONFIG.sottotitoloHero}</p>
                                         <div className="flex flex-col md:flex-row gap-4 justify-center">
-                                            <button onClick={() => setCurrentPage('piazzale')} className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 px-12 py-5 rounded-xl font-black uppercase transition shadow-xl shadow-blue-500/30 hover:scale-105 transform border border-blue-400/50">Esplora il Piazzale</button>
-                                            <a href={`tel:${CONFIG.telefonoLink}`} className="bg-white/10 hover:bg-white/20 backdrop-blur-md px-12 py-5 rounded-xl font-bold uppercase transition border border-white/20">Chiama Ora</a>
+                                            <button onClick={() => setCurrentPage('piazzale')} className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 px-12 py-5 rounded-xl font-black uppercase transition shadow-xl shadow-blue-500/50 hover:scale-105 transform border border-blue-400/50">Esplora il Piazzale</button>
+                                            <a href={`tel:${CONFIG.telefonoLink}`} className="bg-white/10 hover:bg-white/30 backdrop-blur-md px-12 py-5 rounded-xl font-bold uppercase transition border border-white/30 shadow-xl">Chiama Ora</a>
                                         </div>
+                                    </div>
+
+                                    {/* Indicatori Slider */}
+                                    <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3 z-10">
+                                        {heroImages.map((_, idx) => (
+                                            <button 
+                                                key={idx}
+                                                onClick={() => setCurrentHeroIndex(idx)}
+                                                className={`w-3 h-3 rounded-full transition-all duration-300 ${idx === currentHeroIndex ? 'bg-cyan-400 w-8' : 'bg-white/40 hover:bg-white/70'}`}
+                                                aria-label={`Vai all'immagine ${idx + 1}`}
+                                            ></button>
+                                        ))}
                                     </div>
                                 </div>
                                 <div className="py-20 px-6 bg-white border-y">
